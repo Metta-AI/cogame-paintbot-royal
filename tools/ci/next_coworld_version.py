@@ -20,11 +20,13 @@ is NOT a seat; the league era oracle is rounds / league.game.coworld_id,
 never "the newest registry row" (the fleet once mislabelled 0.7.125/0.7.126
 as live this way).
 
-Registry API facts this code is built on (verified 2026-09-03):
-  - GET /v2/coworlds returns a bare JSON list, newest-first (created_at desc).
+Registry API facts this code is built on (verified 2026-09-15):
+  - GET /v2/coworlds/summaries returns a bare JSON list, newest-first
+    (created_at desc), with every field this picker needs: id, name, version,
+    and canonical. It deliberately omits the full manifest payload.
   - `limit` hard-caps at 500 (501 -> HTTP 422); the registry holds more than
     500 rows, so a single page silently under-reads.
-  - `?name=` is IGNORED by the server; filter client-side.
+  - There is no server-side name filter; filter client-side.
   - Pagination is KEYSET/CURSOR, not offset. `?offset=` / `?page=` / `?skip=`
     are all SILENTLY IGNORED and re-return page 0. To page, read the
     `x-next-cursor` RESPONSE HEADER and pass it back as `?cursor=<token>`;
@@ -60,7 +62,7 @@ def fetch_all_rows(token):
     seen_ids = set()
     cursor = None
     for _ in range(MAX_PAGES):
-        url = f"{BASE}/v2/coworlds?limit={PAGE_SIZE}"
+        url = f"{BASE}/v2/coworlds/summaries?limit={PAGE_SIZE}"
         if cursor:
             url += f"&cursor={urllib.parse.quote(cursor, safe='')}"
         req = urllib.request.Request(
@@ -90,7 +92,9 @@ def fetch_all_rows(token):
             )
         if len(batch) < PAGE_SIZE or not cursor:
             return rows
-    raise SystemExit(f"registry did not terminate within {MAX_PAGES} pages; refusing to guess")
+    raise SystemExit(
+        f"registry did not terminate within {MAX_PAGES} pages; refusing to guess"
+    )
 
 
 def parse_version(row):

@@ -21,7 +21,7 @@ sys.path.insert(0, "tools/ci")
 from next_coworld_version import compute_next, fetch_all_rows
 
 rows = fetch_all_rows(os.environ["SOFTMAX_TOKEN"])
-template = json.loads(Path("coworld_manifest_paintbot.json").read_text())
+template = json.loads(Path("coworld_manifest_paintbot_royal.json").read_text())
 template["game"]["name"] = "paintbot-profiling"
 del template["game"]["runnable"]["env"]["ANTHROPIC_API_KEY_URI"]
 template["game"]["runnable"]["env"]["COWORLD_WORKDIR"] = "/coworld"

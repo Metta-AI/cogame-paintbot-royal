@@ -15,7 +15,7 @@ import copy
 import json
 import sys
 
-PATH = "coworld_manifest_paintbot.json"
+PATH = "coworld_manifest_paintbot_royal.json"
 
 with open(PATH) as f:
     m = json.load(f)

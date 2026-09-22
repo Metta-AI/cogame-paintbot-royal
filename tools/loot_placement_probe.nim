@@ -31,7 +31,7 @@ import ctf/[sim, sim_types, sim_config]
 
 const
   VariantId = "battle-royale-s2"
-  ManifestPath = "coworld_manifest_paintbot.json"
+  ManifestPath = "coworld_manifest_paintbot_royal.json"
   Seeds = 24
 
 proc distinctPixels(spawns: seq[PickupSpawn]): int =

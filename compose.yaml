@@ -3,7 +3,7 @@ x-coworld-role-contexts:
 
 services:
   game:
-    image: coworld-ctf-game:latest
+    image: cogame-paintbot-royal-game:latest
     platform: linux/amd64
     build:
       context: *game_context
@@ -15,7 +15,7 @@ services:
         # the caller does not export it, which leaves recordings unstamped.
         SIM_SOURCES_STAMP: ${SIM_SOURCES_STAMP:-}
   player:
-    image: coworld-ctf-baseline:latest
+    image: cogame-paintbot-royal-baseline:latest
     platform: linux/amd64
     build:
       context: *game_context

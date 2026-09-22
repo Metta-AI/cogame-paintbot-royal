@@ -60,7 +60,7 @@ proc pairedGame(configOverrideJson = ""): SimServer =
     Blue, result.players[LegendIdx].perks, result.players[LegendIdx].level)
 
 const
-  ## battle-royale-s2's own manifest shape (coworld_manifest_paintbot.json,
+  ## battle-royale-s2's own manifest shape (coworld_manifest_paintbot_royal.json,
   ## the "hitPoints": 4 arm E variant) trimmed to the fields that matter for
   ## this demo: hitPoints=4 (not the classic-CTF default of 3) and brMode
   ## true (so levelForXp's threshold scaling and hitPointsFor's handicap

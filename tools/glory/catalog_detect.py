@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """GLORY GRADIENT S6 — catalog detection CLI (DO item 1): per coworld_version,
 read the S6 switches from that build's OWN source commit -> flagship
-manifest (`battle-royale-s2` variant in `coworld_manifest_paintbot.json`),
+manifest (`battle-royale-s2` variant in `coworld_manifest_paintbot_royal.json`),
 and label the version "v2" (classic flat-integer fold) or "v3"
 (percent-scaled fixed-point fold, `catalogV3Reprice`/`placementRampV3`
 armed). A LOCAL git-object read (`git show <sha>:<path>`) against a repo
@@ -35,7 +35,7 @@ def main():
     ap.add_argument("--repo", default=".", help="path to the coworld-ctf checkout")
     ap.add_argument("--version-sha", required=True,
                      help="JSON file: coworld_version -> commit sha")
-    ap.add_argument("--manifest-path", default="coworld_manifest_paintbot.json")
+    ap.add_argument("--manifest-path", default="coworld_manifest_paintbot_royal.json")
     ap.add_argument("--variant-id", default="battle-royale-s2")
     ap.add_argument("--out", default="/tmp/glory-catalog/catalog_map.json")
     args = ap.parse_args()

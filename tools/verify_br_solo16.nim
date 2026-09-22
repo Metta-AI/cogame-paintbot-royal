@@ -1,6 +1,6 @@
 ## verify_br_solo16 — the pre-flip gate for PKG-C (16-solo battle-royale-s2).
 ##
-## Builds a REAL sim straight from `coworld_manifest_paintbot.json`'s
+## Builds a REAL sim straight from `coworld_manifest_paintbot_royal.json`'s
 ## `battle-royale-s2` game_config (the exact config a hosted episode would
 ## get) and asserts the four properties the PKG-B+C convergence must hold
 ## before the S2 league is ever flipped onto this variant:
@@ -39,7 +39,7 @@ import
   toolutil
 
 const
-  ManifestPath = GameDir / "coworld_manifest_paintbot.json"
+  ManifestPath = GameDir / "coworld_manifest_paintbot_royal.json"
   VariantId = "battle-royale-s2"
   ExpectedColors = ["red", "blue", "green", "yellow", "black", "silver",
     "ivory", "pink", "umber", "rust", "orange", "plum", "lime", "navy",
@@ -106,7 +106,7 @@ proc main() =
   #    its play_context bytes without the server raising. This is the exact
   #    call pumpPlayOutbound (server.nim) makes the moment a play seat's
   #    websocket connects live -- and every seat on this manifest variant
-  #    IS a play seat (coworld_manifest_paintbot.json's battle-royale-s2
+  #    IS a play seat (coworld_manifest_paintbot_royal.json's battle-royale-s2
   #    slots are all `"control": "play"`, one seat per team, so none of them
   #    has a duo partner). Before the 2026-09-05 fix, buildPlayContext's
   #    invariant required duo_partner whenever mode == br, so this call

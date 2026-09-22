@@ -84,7 +84,7 @@ narrow)
   # COMPILED in. Verified as the only top-level files any .nim actually reads
   # (Dockerfile and AGENTS.md appear in comments only).
   narrow_tree /cas/ws src tests tools players client data \
-    config.json coworld_manifest_paintbot.json
+    config.json coworld_manifest_paintbot_royal.json
 
   deps=$(caos curry --base:@=/cas/args/base \
     "--worker1:@=/cas/args/in/caos-tools/lib/deps.sh") || fail "currying deps"

@@ -1,4 +1,4 @@
-# Agent operating guide — coworld-ctf
+# Agent operating guide — cogame-paintbot-royal (Paintbot Royal, split out of coworld-ctf)
 
 Orientation for coding agents (Claude Code, Codex, etc.) working in this
 repo. Gameplay rules live in [docs/RULES.md](docs/RULES.md); this file
@@ -248,7 +248,7 @@ For Observatory profiling, build the separate `paintbot-profiling` Coworld.
 Its manifest is catalog-visible; keep the experience requests private. Never
 upload these flags under `paintbot` or change a league's version lock.
 The script generates `build/profiling-coworld/template.json` from the current
-`coworld_manifest_paintbot.json`, changing the game name and environment.
+`coworld_manifest_paintbot_royal.json`, changing the game name and environment.
 It omits the game-side LLM credential used by deprecated squad variants;
 those variants are not intended to run on this Coworld.
 Season 2 player policy credentials are unaffected.

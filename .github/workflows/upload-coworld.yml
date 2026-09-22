@@ -1,12 +1,11 @@
 name: Upload Coworld
 
-# Builds the game/player images and uploads one paintbot Coworld version after
-# the test workflow ("Github Actions") passes on main. That Coworld serves both
-# the Paintbot and CTF leagues: existing Paintbot variant ids stay unchanged,
-# The published manifest now exposes only battle-royale-s2; deprecated CTF
-# variants are preserved in deprecated_variants_paintbot.json, not uploaded.
+# Builds the game/player images and uploads one paintbot-royal Coworld version after
+# the test workflow ("Github Actions") passes on main. That Coworld serves the
+# Paintbot Royal league (the Season 2 battle royale, split out of coworld-ctf
+# on 2026-09-21); the manifest exposes only the battle-royale-s2 family.
 #
-# Auth: the SOFTMAX_TOKEN repo secret for the coworld-ctf-ci user credential.
+# Auth: the SOFTMAX_TOKEN repo secret (a softmax user credential for CI).
 
 on:
   workflow_run:
@@ -26,12 +25,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Explicit game version (default: bump patch of latest uploaded paintbot)"
+        description: "Explicit game version (default: bump patch of latest uploaded paintbot-royal)"
         required: false
 
 # One upload at a time; queued runs wait so version query/bump cannot race.
 concurrency:
-  group: upload-coworld-paintbot
+  group: upload-coworld-paintbot-royal
   cancel-in-progress: false
 
 jobs:
@@ -48,7 +47,7 @@ jobs:
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
-    # `contents: write` is for the paintbot-v* tag the publish step pushes —
+    # `contents: write` is for the paintbot-royal-v* tag the publish step pushes —
     # that tag IS the published-version -> source-commit map everything else
     # here reads.
     permissions:
@@ -58,7 +57,7 @@ jobs:
         with:
           path: coworld-ctf
           # Full history + tags: the decision step below needs to see every
-          # paintbot-v* tag to know what has already been published.
+          # paintbot-royal-v* tag to know what has already been published.
           fetch-depth: 0
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
       # WHAT TO PUBLISH, AND WHETHER TO PUBLISH AT ALL.
@@ -91,9 +90,9 @@ jobs:
           # commit it built, so the tags are the published -> source map.
           # A manual dispatch may override this deliberately (re-publishing
           # the same tree as a new version is a legitimate thing to want).
-          existing=$(git tag --points-at "$head" --list 'paintbot-v*' | head -1)
+          existing=$(git tag --points-at "$head" --list 'paintbot-royal-v*' | head -1)
           if [ -n "$existing" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
-            echo "::notice::main HEAD $head is already published as ${existing#paintbot-v}; nothing to do."
+            echo "::notice::main HEAD $head is already published as ${existing#paintbot-royal-v}; nothing to do."
             echo "stale=1" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -130,7 +129,7 @@ jobs:
           python3 coworld-ctf/tools/ci/test_next_coworld_version.py
           version="${{ inputs.version || '' }}"
           if [ -z "$version" ]; then
-            version=$(python3 coworld-ctf/tools/ci/next_coworld_version.py paintbot)
+            version=$(python3 coworld-ctf/tools/ci/next_coworld_version.py paintbot-royal)
           fi
           echo "Uploading as paintbot $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -146,7 +145,7 @@ jobs:
             --version "${{ steps.version.outputs.version }}" \
             --project . \
             --compose compose.yaml \
-            --template coworld_manifest_paintbot.json \
+            --template coworld_manifest_paintbot_royal.json \
             --output build/coworld-package/coworld_manifest.json
           uvx --from "coworld[auth]==0.1.43" coworld upload-coworld \
             build/coworld-package/coworld_manifest.json \
@@ -175,7 +174,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag="paintbot-v${{ steps.version.outputs.version }}"
+          tag="paintbot-royal-v${{ steps.version.outputs.version }}"
           sha="${{ steps.freshness.outputs.sha }}"
           git tag -f "$tag" "$sha"
           git push --force origin "refs/tags/$tag"

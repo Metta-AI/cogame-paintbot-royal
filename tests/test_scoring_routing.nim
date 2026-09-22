@@ -32,7 +32,7 @@ import
   helpers, pb_helpers
 
 proc paintbotSchemaDefaults(): JsonNode =
-  let props = parseFile(GameDir / "coworld_manifest_paintbot.json")[
+  let props = parseFile(GameDir / "coworld_manifest_paintbot_royal.json")[
     "game"]["config_schema"]["properties"]
   result = newJObject()
   for key, prop in props:
@@ -45,7 +45,7 @@ proc effectivePaintbotVariantConfig(variantId: string): JsonNode =
   ## Search both so this anchor keeps proving the platform's
   ## defaults-then-overlay materialization for whichever file holds the id.
   result = paintbotSchemaDefaults()
-  for path in ["coworld_manifest_paintbot.json", "deprecated_variants_paintbot.json"]:
+  for path in ["coworld_manifest_paintbot_royal.json", "deprecated_variants_paintbot.json"]:
     for variant in parseFile(GameDir / path)["variants"]:
       if variant["id"].getStr() == variantId:
         for key, value in variant["game_config"]:

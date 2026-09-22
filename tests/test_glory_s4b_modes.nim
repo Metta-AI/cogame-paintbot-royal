@@ -121,8 +121,8 @@ suite "S4b config surface (achievementLightableModes, dark by default, its own k
     check config.achievementLightableModes == false
 
 suite "S4b manifest reachability (armed from the SCHEMA path, not defaultGameConfig())":
-  test "coworld_manifest_paintbot.json's config_schema declares achievementLightableModes, default false":
-    let manifest = parseFile(GameDir / "coworld_manifest_paintbot.json")
+  test "coworld_manifest_paintbot_royal.json's config_schema declares achievementLightableModes, default false":
+    let manifest = parseFile(GameDir / "coworld_manifest_paintbot_royal.json")
     let schema = manifest["game"]["config_schema"]
     require schema["properties"].hasKey("achievementLightableModes")
     let prop = schema["properties"]["achievementLightableModes"]
@@ -157,7 +157,7 @@ suite "S4b manifest reachability (armed from the SCHEMA path, not defaultGameCon
     ## here. Reads the published manifest directly, not `config.update`, so
     ## a future accidental revert of the flagSet block (not the schema)
     ## fails this test instead of shipping dark.
-    let manifest = parseFile(GameDir / "coworld_manifest_paintbot.json")
+    let manifest = parseFile(GameDir / "coworld_manifest_paintbot_royal.json")
     var flagship: JsonNode = nil
     for variant in manifest["variants"]:
       if variant["id"].getStr() == "battle-royale-s2":

@@ -43,7 +43,7 @@ import
   ctf/sim
 
 const
-  ManifestPath = "coworld_manifest_paintbot.json"
+  ManifestPath = "coworld_manifest_paintbot_royal.json"
   Teams = 16
   SeatsPerTeam = 1
   Seats = Teams * SeatsPerTeam

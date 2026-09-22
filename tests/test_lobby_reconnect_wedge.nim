@@ -266,7 +266,7 @@ suite "lobby-fill reconnect wedge":
     # only the platform-supplied tokens and two lobby-pacing knobs added:
     # startWaitTicks 1 / lobbyChatTicks 0 so the started round is quick to
     # observe. Seats, teams, brMode, season2Shell, mapSpec all ride verbatim.
-    let manifest = parseJson(readFile(GameDir / "coworld_manifest_paintbot.json"))
+    let manifest = parseJson(readFile(GameDir / "coworld_manifest_paintbot_royal.json"))
     var variantConfig: JsonNode = nil
     for variant in manifest["variants"]:
       if variant["id"].getStr() == "battle-royale-s2":

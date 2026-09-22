@@ -6,7 +6,7 @@ import
 
 const
   ReplayFixture = GameDir / "tests" / "replays" / "ctf.bitreplay"
-  ManifestName = GameDir / "coworld_manifest_paintbot.json"
+  ManifestName = GameDir / "coworld_manifest_paintbot_royal.json"
 
 proc expectDeprecatedRefusal(config: GameConfig, expectedTriggers: string) =
   var caught = false

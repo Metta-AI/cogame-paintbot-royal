@@ -668,7 +668,7 @@ def read_glory_version(repo_root: str, commit_sha: str,
 
 @functools.lru_cache(maxsize=None)
 def read_manifest_switches(repo_root: str, commit_sha: str,
-                            manifest_path: str = "coworld_manifest_paintbot.json",
+                            manifest_path: str = "coworld_manifest_paintbot_royal.json",
                             variant_id: str = FLAGSHIP_VARIANT_ID) -> CatalogSwitches:
     """Reads the flagship variant's S6 switches straight from the SOURCE
     (`git show <sha>:<manifest_path>`, a LOCAL git-object read -- no
@@ -712,7 +712,7 @@ def _find_variant(node, variant_id):
 
 
 def build_catalog_map(repo_root: str, version_to_sha: dict,
-                       manifest_path: str = "coworld_manifest_paintbot.json",
+                       manifest_path: str = "coworld_manifest_paintbot_royal.json",
                        variant_id: str = FLAGSHIP_VARIANT_ID) -> dict:
     """coworld_version -> {"label": "v2"|"v3", "gloryVersion": <int>}, one
     manifest + one glory.nim read per DISTINCT commit (cached). Raises

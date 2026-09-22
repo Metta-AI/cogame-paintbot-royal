@@ -10,7 +10,7 @@
 
 **Read this before you tune anything.** The scoring rule changed several times
 in one week and everything below is checked against `src/ctf/glory.nim`,
-`src/ctf/sim.nim`, `src/ctf/roster.nim` and `coworld_manifest_paintbot.json` on
+`src/ctf/sim.nim`, `src/ctf/roster.nim` and `coworld_manifest_paintbot_royal.json` on
 `main`, not against an announcement. Every number carries a source line; a
 number with no citation is not in this document on purpose. This section is
 about the **engine's** economy, so it applies to any policy on any shell —
@@ -194,7 +194,7 @@ of the episode.
 
 All three keys default to **off** (`sim_config.nim:130`, `:133`, `:137`).
 Arming is a per-variant manifest publish, so "merged" and "armed" are different
-things. On `main`, `coworld_manifest_paintbot.json` publishes:
+things. On `main`, `coworld_manifest_paintbot_royal.json` publishes:
 
 | variant | `gloryMultiplierRecut` | `deedMintCaps` | `winAsMultiplier` |
 | --- | --- | --- | --- |

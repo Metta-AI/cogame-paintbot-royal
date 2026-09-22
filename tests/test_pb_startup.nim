@@ -148,7 +148,7 @@ suite "startup":
     check "src/paintball_player.nim" in dockerfile
     check "/bin/ctf" in dockerfile
     check "/bin/paintball-player" in dockerfile
-    let manifest = parseJson(readFile("coworld_manifest_paintbot.json"))
+    let manifest = parseJson(readFile("coworld_manifest_paintbot_royal.json"))
     check manifest["game"]["runnable"]["run"][0].getStr() == "/bin/ctf"
     ## The paintball baselines are deliberately NOT manifest players: the
     ## certifier requires every declared player to occupy a certification

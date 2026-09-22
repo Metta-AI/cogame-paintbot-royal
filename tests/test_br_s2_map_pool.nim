@@ -34,7 +34,7 @@ import
 
 const
   PoolPath = GameDir / "data" / "br_s2_map_pool.json"
-  ManifestPath = GameDir / "coworld_manifest_paintbot.json"
+  ManifestPath = GameDir / "coworld_manifest_paintbot_royal.json"
   VariantId = "battle-royale-s2-lootstart"
     ## NOT "battle-royale-s2": the S2 simplification (PKG-A/PKG-C,
     ## 2026-09-04) moved the flagship to 16 solo teams on the original

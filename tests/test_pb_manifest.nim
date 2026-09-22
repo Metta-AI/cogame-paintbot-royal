@@ -15,7 +15,7 @@ import std/[json, strutils, unittest]
 import pb_helpers
 
 const
-  ManifestPath = "coworld_manifest_paintbot.json"
+  ManifestPath = "coworld_manifest_paintbot_royal.json"
   ArchivePath = "deprecated_variants_paintbot.json"
   Seats = 2
   EpisodeTimeoutSeconds = 1200
@@ -162,7 +162,7 @@ suite "paintbot manifest and deprecated variants":
     ## certify. The key is resolved GAME-side (llm.nim), so a missing secret
     ## degrades paintball episodes to scripted and never touches classic ones.
     let name = game["name"].getStr()
-    check name == "paintbot"
+    check name == "paintbot-royal"
     check "_" notin name
     check game["runnable"]["env"]["ANTHROPIC_API_KEY_URI"].getStr() ==
       "secret://coworld/" & name & "/anthropic_api_key"

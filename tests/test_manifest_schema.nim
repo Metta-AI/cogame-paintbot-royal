@@ -9,7 +9,7 @@
 import helpers, std/[json, os, strutils, unittest], ctf/sim
 
 const
-  ManifestName = "coworld_manifest_paintbot.json"
+  ManifestName = "coworld_manifest_paintbot_royal.json"
   ArchiveName = "deprecated_variants_paintbot.json"
   PlatformOnlyKeys = ["num_agents"]
   ## Schema keys the game deliberately never reads: documented as consumed by

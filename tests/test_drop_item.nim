@@ -311,7 +311,7 @@ suite "the board object-id pool is registered, not hand-verified":
 
 # ─────────────────────────────────────────────────────────────────────────
 suite "manifest wiring":
-  const ManifestName = "coworld_manifest_paintbot.json"
+  const ManifestName = "coworld_manifest_paintbot_royal.json"
 
   proc findSchema(node: JsonNode): JsonNode =
     if node.kind == JObject:

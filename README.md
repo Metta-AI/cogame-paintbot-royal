@@ -234,9 +234,10 @@ choice is documented in
 
 The published `paintbot-royal` manifest offers only the `battle-royale-s2`
 family. The former classic, CTF, paintball, and first-generation battle-royale
-configs stay in [`coworld-ctf`](https://github.com/Metta-AI/coworld-ctf) (its
-`deprecated_variants_paintbot.json` and `coworld_manifest_br.json`); they are
-not published from this repo. Live boot refuses these deprecated modes since
+configs are retained verbatim in [`deprecated_variants_paintbot.json`](deprecated_variants_paintbot.json)
+and the older 32-seat archive [`coworld_manifest_br.json`](coworld_manifest_br.json)
+as engine test fixtures; they are not published from this repo (they still ship
+from [`coworld-ctf`](https://github.com/Metta-AI/coworld-ctf)). Live boot refuses these deprecated modes since
 0.7.253 unless the config explicitly sets `allowDeprecatedModes: true`.
 
 `players/baseline/` and `players/onepage/` are retained only for these

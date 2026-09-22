@@ -30,7 +30,7 @@ import
 
 const
   PoolPath = GameDir / "data" / "br_map_pool.json"
-  ManifestPath = GameDir / "coworld_manifest_paintbot.json"
+  ManifestPath = GameDir / "coworld_manifest_paintbot_royal.json"
   ClassicVariantId = "battle-royale"
     ## Borrowed only as a source of a real, already-16-team/brMode config
     ## shape to overlay mapPath:"brpool16" onto — see the header comment.

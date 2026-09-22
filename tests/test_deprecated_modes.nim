@@ -104,58 +104,43 @@ suite "deprecated live-mode boot seam":
     let s2GameConfig = manifestVariantConfig("battle-royale-s2")
     check not s2GameConfig.hasKey("allowDeprecatedModes")
 
-  test "every classic manifest variant boots with the deprecated-mode override":
-    ## Root cause of the game_unhealthy crash on Elite (resolves to "2v2")
-    ## and Campaign (resolves to "1v1"/"2v2"/"4ffa", one per board cell
-    ## mode): every classic (non-Season-2) template hits
-    ## checkDeprecatedMode's CtfError at live boot unless its game_config
-    ## carries allowDeprecatedModes: true. This loads each id's REAL shipped
-    ## game_config out of the manifest file and boots it for real -- drop
-    ## the flag from any one entry (or from the manifest generally) and
-    ## only this test catches it; that's the discriminating property, not
-    ## just an engine-level check against a hand-built config.
-    ##
-    ## Owner correction (2026-09-02): CTF is a fine game mode -- only the
-    ## CTF *league* (a separate, still-retired thing) stays gone. So
-    ## "default", "ctf-default", and "ctf-1v1" carry the override and boot
-    ## here too, same as their siblings. "4ffa8", "paintball", and
-    ## "battle-royale" also ride along: they are gated by this exact same
-    ## non-variant-specific check, are not literally CTF (4ffa8 is 4ffa's
-    ## own ruleset at double muster; paintball is a different loadout
-    ## entirely; battle-royale is explicitly flagless), and leaving any of
-    ## them refusing while their siblings boot would just be a landmine
-    ## for whatever else references them. Every classic template is
-    ## CTF-lineage in some sense, so singling any of them out would be
-    ## arbitrary -- battle-royale-s2 is the one principled exception,
-    ## because it is natively supported and needs no override at all.
+  test "every archived classic template refuses without the override and boots with it":
+    ## SPLIT (2026-09-21): this repo publishes the paintbot-royal Coworld,
+    ## whose manifest is the Season 2 family only. The classic templates
+    ## (2v2 / 4ffa / 4ffa8 / default / 1v1 / ctf-default / ctf-1v1 /
+    ## paintball / battle-royale) are engine fixtures here, archived as
+    ## shipped in deprecated_variants_paintbot.json WITHOUT the override --
+    ## coworld-ctf is where they are published with allowDeprecatedModes
+    ## and where "Elite/Campaign boot" is guarded. What this repo owns is
+    ## the seam itself: every archived classic template hits
+    ## checkDeprecatedMode's CtfError at live boot as shipped, and boots
+    ## once the override is applied, so a future engine change cannot
+    ## silently defeat the gate (or silently break the classic modes).
     for variantId in ["2v2", "4ffa", "4ffa8", "default", "1v1",
         "ctf-default", "ctf-1v1", "paintball", "battle-royale"]:
+      let gameConfig = manifestVariantConfig(variantId)
+      check not gameConfig.hasKey("allowDeprecatedModes")
+      var refusing = defaultGameConfig()
+      refusing.update($gameConfig)
+      check not refusing.allowDeprecatedModes
+      expectDeprecatedRefusal(refusing, "classic")
+      var overridden = copy(gameConfig)
+      overridden["allowDeprecatedModes"] = %true
       var config = defaultGameConfig()
-      config.update($manifestVariantConfig(variantId))
+      config.update($overridden)
       check config.allowDeprecatedModes
       config.checkDeprecatedMode()
 
-  test "CTF-branded classic templates boot too -- only the CTF league stays gone":
-    ## Inverted (2026-09-02): this test originally asserted "ctf-default",
-    ## "ctf-1v1", and "default" (CTF in all but name -- its description is
-    ## the byte-identical "Sixteen-player 8v8 CTF episode using the default
-    ## balanced game settings." as ctf-default's) carried no override and
-    ## still refused to boot, on the theory that "CTF stays gone" meant the
-    ## game mode. Owner correction: it is the separate CTF *league*
-    ## (league_key "ctf", enabled: false -- a platform/seed concern out of
-    ## scope for this engine-level gate) that stays retired, not the CTF
-    ## game mode itself; every classic template here is CTF-lineage. A
-    ## revived CTF league would otherwise hit this exact boot gate for no
-    ## reason, the same way Elite/Campaign did before PR #363. This test
-    ## is now the inverse of its original self and deliberately redundant
-    ## with the comprehensive test above, kept as a named regression guard
-    ## on these three specific ids so nobody re-excludes them by
-    ## copy-pasting this test's original (backwards) intent.
+  test "CTF-branded classic templates boot with the override too -- only the CTF league stays gone":
+    ## Kept as a named regression guard on these three ids (see the
+    ## comprehensive test above and the 2026-09-02 owner correction in
+    ## coworld-ctf: CTF is a fine game mode; only the CTF *league* is
+    ## retired). Same seam, same shape: refuse as archived, boot overridden.
     for variantId in ["ctf-default", "ctf-1v1", "default"]:
-      let gameConfig = manifestVariantConfig(variantId)
-      check gameConfig.hasKey("allowDeprecatedModes")
+      var overridden = copy(manifestVariantConfig(variantId))
+      overridden["allowDeprecatedModes"] = %true
       var config = defaultGameConfig()
-      config.update($gameConfig)
+      config.update($overridden)
       check config.allowDeprecatedModes
       config.checkDeprecatedMode()
 

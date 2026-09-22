@@ -123,7 +123,17 @@ suite "deprecated live-mode boot seam":
       var refusing = defaultGameConfig()
       refusing.update($gameConfig)
       check not refusing.allowDeprecatedModes
-      expectDeprecatedRefusal(refusing, "classic")
+      # Which trigger(s) fire differs per template ("classic" for the
+      # 2v2/ctf family, "season1Shell" for the archived battle-royale,
+      # "paintball" for the paintball loadout); the seam property is only
+      # that the gate refuses and names the override.
+      var refused = false
+      try:
+        refusing.checkDeprecatedMode()
+      except CtfError as error:
+        refused = true
+        check "allowDeprecatedModes" in error.msg
+      check refused
       var overridden = copy(gameConfig)
       overridden["allowDeprecatedModes"] = %true
       var config = defaultGameConfig()

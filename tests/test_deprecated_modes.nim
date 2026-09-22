@@ -19,10 +19,15 @@ proc expectDeprecatedRefusal(config: GameConfig, expectedTriggers: string) =
     check "[" & expectedTriggers & "]" in error.msg
   check caught
 
+const ArchiveName = GameDir / "deprecated_variants_paintbot.json"
+
 proc manifestVariantConfig(variantId: string): JsonNode =
-  for variant in parseFile(ManifestName)["variants"]:
-    if variant["id"].getStr() == variantId:
-      return variant["game_config"]
+  ## Published manifest first, then the classic archive: since the
+  ## paintbot-royal split the classic variants are fixtures, not published.
+  for name in [ManifestName, ArchiveName]:
+    for variant in parseFile(name)["variants"]:
+      if variant["id"].getStr() == variantId:
+        return variant["game_config"]
   raise newException(ValueError, "missing manifest variant " & variantId)
 
 suite "deprecated live-mode boot seam":

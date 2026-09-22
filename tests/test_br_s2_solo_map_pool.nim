@@ -31,6 +31,7 @@ import
 const
   PoolPath = GameDir / "data" / "br_map_pool.json"
   ManifestPath = GameDir / "coworld_manifest_paintbot_royal.json"
+  ArchivePath = GameDir / "deprecated_variants_paintbot.json"
   ClassicVariantId = "battle-royale"
     ## Borrowed only as a source of a real, already-16-team/brMode config
     ## shape to overlay mapPath:"brpool16" onto — see the header comment.
@@ -50,14 +51,17 @@ proc soloHookGameConfig(): JsonNode =
   ## map) with its pinned single mapSpec removed and mapPath set to
   ## "brpool16", so config.update exercises the new hook exactly the way
   ## a future 16-solo-team variant's game_config would.
-  let manifest = parseJson(readFile(ManifestPath))
-  for variant in manifest["variants"]:
-    if variant["id"].getStr() == ClassicVariantId:
-      result = copy(variant["game_config"])
-      result.delete("mapSpec")
-      result["mapPath"] = %BrPoolMapName16
-      return
-  doAssert false, ManifestPath & " has no " & ClassicVariantId & " variant"
+  # Published manifest first, then the classic archive (the plain
+  # battle-royale variant is archived since the paintbot-royal split).
+  for path in [ManifestPath, ArchivePath]:
+    let manifest = parseJson(readFile(path))
+    for variant in manifest["variants"]:
+      if variant["id"].getStr() == ClassicVariantId:
+        result = copy(variant["game_config"])
+        result.delete("mapSpec")
+        result["mapPath"] = %BrPoolMapName16
+        return
+  doAssert false, ManifestPath & "/" & ArchivePath & " have no " & ClassicVariantId & " variant"
 
 suite "br s2 solo map pool: the reused 16-group pool":
   let pool = loadBrMapPoolRaw(PoolPath)

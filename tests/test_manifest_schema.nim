@@ -253,7 +253,7 @@ suite "league manifest config_schema vs GameConfig":
       if variant["game_config"].hasKey("aimTurnRate"):
         check variant["game_config"]["aimTurnRate"].getInt == expected
 
-  test "published manifest leads with Season 2 and archive preserves nine ids":
+  test "published manifest is the Season 2 family and archive preserves nine ids":
     ## UNION, now permanent by owner reversal (2026-09-02): the season2-only
     ## cleanup this union was staged to finish is reversed now that Season 2
     ## is established -- "campaign" (1v1/2v2/4ffa) and "elite" (2v2) are
@@ -273,10 +273,11 @@ suite "league manifest config_schema vs GameConfig":
     # battle-royale-s2-* STAGING variants sit directly behind the flagship
     # so each S2 flag (lootStart / downedMode) can be staged or bisected on
     # its own instead of riding one coupled variant switch.
+    # SPLIT (2026-09-21): this repo publishes the paintbot-royal Coworld,
+    # i.e. the Season 2 family only. The classic ids below live on as the
+    # archive (engine test fixtures) and are still published from coworld-ctf.
     check variantIds == @["battle-royale-s2", "battle-royale-s2-lootstart",
-      "battle-royale-s2-downed", "2v2", "4ffa", "4ffa8",
-      "default", "1v1", "ctf-default", "ctf-1v1", "paintball",
-      "battle-royale"]
+      "battle-royale-s2-downed"]
     variantIds.setLen(0)
     for variant in parseFile(GameDir / ArchiveName)["variants"]:
       variantIds.add variant["id"].getStr()

@@ -211,10 +211,13 @@ suite "paintbot manifest, battle-royale-s2 variant":
     ## never sets sprayCount/grenadeCount inherits the engine's -1 default,
     ## byte-identical to the pre-objbalance placement path.
     var otherVariant: JsonNode
-    for variant in manifest["variants"]:
-      if variant["id"].getStr() == "battle-royale":
-        otherVariant = variant
-    doAssert otherVariant != nil, "manifest has no battle-royale variant"
+    # The plain battle-royale variant is archived since the paintbot-royal
+    # split (published manifest = Season 2 family only).
+    for source in [manifest, parseJson(readFile("deprecated_variants_paintbot.json"))]:
+      for variant in source["variants"]:
+        if variant["id"].getStr() == "battle-royale":
+          otherVariant = variant
+    doAssert otherVariant != nil, "manifest/archive has no battle-royale variant"
     let otherGc = otherVariant["game_config"]
     check not otherGc.hasKey("sprayCount")
     check not otherGc.hasKey("grenadeCount")

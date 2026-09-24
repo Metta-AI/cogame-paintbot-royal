@@ -211,7 +211,12 @@ suite "SEASON 2 replay viewer HUD: side-lane docking (letterbox rails)":
   ## unconditionally at every window shape, embed included, and only the
   ## SECOND (right, live-surface) rail still depends on there being real
   ## pillarbox room on both flanks. Below ~480px wide the rail's reserved
-  ## width shrinks (railMin/boardFloor) rather than the rail disappearing.
+  ## width shrinks (railW/boardFloor) rather than the rail disappearing.
+  ## OWNER RULING 2026-09-24: at 992x529/1440x810 the rail no longer
+  ## reserves a fixed 240px — it content-fits down to RAIL_MIN (168) so the
+  ## board (the "actual video part") gets the height the box offers instead
+  ## of sitting width-bound with empty space to spare. See the "rail
+  ## content-fits the board's height" suite below for the new formula.
   test "both pillarbox rails exist and relayout decides the tiers by geometry":
     checkInBoth "id=\"lane-l\""
     checkInBoth "id=\"lane-r\""
@@ -227,8 +232,55 @@ suite "SEASON 2 replay viewer HUD: side-lane docking (letterbox rails)":
 
   test "the rail shrinks rather than disappearing below ~480px wide":
     checkInBoth "var tinyBox = boxW < 480;"
-    checkInBoth "var railMin = tinyBox ? Math.max(80, Math.round(boxW * 0.32)) : RAIL_MIN;"
     checkInBoth "var boardFloor = tinyBox ? Math.max(120, Math.round(boxW * 0.45)) : 320;"
+    # The tiny-viewport floor is untouched by the 2026-09-24 content-fit
+    # change — it still shrinks toward zero (not toward content) below
+    # ~480px wide, where there is no room for the board otherwise.
+    checkInBoth "? Math.max(80, Math.round(boxW * 0.32))"
+
+suite "SEASON 2 replay viewer HUD: rail content-fits the board's height (owner ruling 2026-09-24)":
+  ## OWNER RULING 2026-09-24: "the board... must be MUCH bigger" — the old
+  ## fixed RAIL_MIN=240 reservation left the board width-bound with a lot
+  ## of empty space (measured at 992x529: rail 240px, board 752x401, 57.5%
+  ## of the box). The rail now content-fits: boardHMax is the board at the
+  ## FULL available height (fit0's own assumption that the top band is
+  ## already 0), railFit is whatever width that leaves, and railW clamps
+  ## railFit into [RAIL_MIN 168, RAIL_PREF 240] -- RAIL_PREF is the OLD
+  ## fixed value, now a ceiling rather than the reservation itself.
+  test "RAIL_MIN/RAIL_PREF constants replace the old fixed reservation":
+    checkInBoth "var LANE_MIN = 300, RAIL_MIN = 168, RAIL_PREF = 240;"
+
+  test "railW is the board-at-full-height leftover, clamped to [RAIL_MIN, RAIL_PREF]":
+    checkInBoth "var boardHMax = availH0;"
+    checkInBoth "var boardWAtMax = boardHMax * BOARD_ASPECT;"
+    checkInBoth "var railFit = boxW - boardWAtMax;"
+    checkInBoth """var railW = tinyBox
+      ? Math.max(80, Math.round(boxW * 0.32))
+      : Math.min(RAIL_PREF, Math.max(RAIL_MIN, Math.round(railFit)));"""
+    checkInBoth "root.style.setProperty('--rail-w', railW + 'px');"
+
+  test "the board's fit is driven by railW, not a fixed reservation":
+    checkInBoth "var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railW);"
+
+  test "rail typography scales with the rail's actual width so a 168px rail doesn't clip":
+    # --rail-u = min(hudscale, railW / RAIL_PREF), set once relayout()
+    # knows the final hudscale (after the fixed-point pass loop).
+    checkInBoth "root.style.setProperty('--rail-u', Math.min(scale, railW / RAIL_PREF).toFixed(3));"
+    # CSS: #lane-l gets an explicit JS-driven width in tier 1 (not the old
+    # flex:1 1 0 auto-grow, which would just re-absorb the freed width),
+    # and tier 1's #lane-l/#scorebug both re-key --u off --rail-u instead
+    # of the plain --hudscale so the roster rows and COMMS block fit.
+    checkInBoth "width: var(--rail-w, 240px);"
+    checkInBoth """body.sidelanes-both #lane-l {
+  flex: 1 1 0;
+  width: auto;
+}"""
+    checkInBoth """body.sidelanes:not(.sidelanes-both) #lane-l {
+  --u: calc(1px * var(--rail-u, 1));
+}"""
+    checkInBoth """body.sidelanes:not(.sidelanes-both) #scorebug {
+  --u: calc(1px * var(--rail-u, 1));
+}"""
 
   test "docked mode gives the board the top band back":
     # sideLanes is unconditional now, so the top band never reserves space —
@@ -286,8 +338,10 @@ suite "chrome=off: the board and nothing else":
   test "the rail width reservation is skipped so the board gets the whole box":
     # Same fitBoxW line the default-path test above pins via `sideLanes`;
     # here we pin the literal so a future edit can't silently drop the
-    # `!sideLanes ||` escape hatch that CHROME_OFF depends on.
-    checkInBoth "var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railMin);"
+    # `!sideLanes ||` escape hatch that CHROME_OFF depends on. railW (the
+    # 2026-09-24 content-fit rail width) replaces the old fixed railMin —
+    # see the "rail content-fits" suite above.
+    checkInBoth "var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railW);"
     checkInBoth "var commsWide = !CHROME_OFF && !EMBED &&"
 
   test "#lockerroom (the loading state) is not inside #chrome, so loading still shows":
@@ -559,7 +613,7 @@ suite "SEASON 2 replay viewer HUD: comms rail redesign (owner 2026-09-10)":
         checkpoint(page.label & ": relayout() must not reference #commsdock's DOM")
         check not body.contains("commsdock")
         checkpoint(page.label & ": the board fit must stay fixed-constant geometry")
-        check body.contains("var LANE_MIN = 300, RAIL_MIN = 240;")
+        check body.contains("var LANE_MIN = 300, RAIL_MIN = 168, RAIL_PREF = 240;")
 
 suite "SEASON 2 replay viewer HUD: intent-word width cap (owner defect, 2026-09-10/11)":
   ## MEASURED DEFECT (pre-existing, unchanged by #536's chip-clip fix above

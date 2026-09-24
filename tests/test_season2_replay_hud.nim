@@ -224,10 +224,11 @@ suite "SEASON 2 replay viewer HUD: side-lane docking (letterbox rails)":
     # and is no longer gated by embed mode either. Tier 1 (left rail) is
     # now unconditional (owner: "always") — no aspect/cost gate remains.
     checkInBoth "var lanesBoth = (boxW - fit0) >= 2 * LANE_MIN;"
-    # sideLanes is now conditional ONLY on the explicit ?chrome=off opt-out
-    # (REPLAY-CONTRACT §3a, "chrome=off: the board and nothing else" suite
-    # below) — every other window shape / mode still gets sideLanes = true.
-    checkInBoth "var sideLanes = !CHROME_OFF;"
+    # sideLanes is now conditional ONLY on the explicit ?chrome=off /
+    # ?chrome=controls opt-outs (REPLAY-CONTRACT §3a and its controls
+    # extension, "chrome=off"/"chrome=controls" suites below) — every other
+    # window shape / mode still gets sideLanes = true.
+    checkInBoth "var sideLanes = !CHROME_OFF && !CHROME_CONTROLS;"
     checkInBoth "dockLanes(sideLanes, sideLanes && lanesBoth);"
 
   test "the rail shrinks rather than disappearing below ~480px wide":
@@ -314,8 +315,10 @@ suite "chrome=off: the board and nothing else":
   ## overlays — and gives the board the whole box minus its own aspect
   ## letterbox. Explicit opt-IN only: the DEFAULT layout (param absent) is
   ## an owner ruling and is untouched by this feature — see the "side-lane
-  ## docking" suite above, whose `var sideLanes = !CHROME_OFF;` assertion
-  ## already pins that the unconditional case is unaffected.
+  ## docking" suite above, whose
+  ## `var sideLanes = !CHROME_OFF && !CHROME_CONTROLS;` assertion already
+  ## pins that the unconditional case is unaffected. See the "chrome=controls"
+  ## suite below for the ?chrome=off + play/pause + scrubber extension.
   test "the param is parsed next to embed and sets data-chrome":
     checkInBoth "var CHROME_OFF = false;"
     checkInBoth "CHROME_OFF = new URLSearchParams(location.search).get('chrome') === 'off';"
@@ -342,7 +345,7 @@ suite "chrome=off: the board and nothing else":
     # 2026-09-24 content-fit rail width) replaces the old fixed railMin —
     # see the "rail content-fits" suite above.
     checkInBoth "var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railW);"
-    checkInBoth "var commsWide = !CHROME_OFF && !EMBED &&"
+    checkInBoth "var commsWide = !CHROME_OFF && !CHROME_CONTROLS && !EMBED &&"
 
   test "#lockerroom (the loading state) is not inside #chrome, so loading still shows":
     for page in bothPages():
@@ -354,6 +357,89 @@ suite "chrome=off: the board and nothing else":
       let lockerroomIdx = page.text.find("id=\"lockerroom\"")
       check lockerroomIdx >= 0
       check lockerroomIdx < chromeOpen
+
+suite "chrome=controls: the board plus play/pause and the scrubber (owner ruling 2026-09-24)":
+  ## REPLAY-CONTRACT §3a extension (softmax.com store page media stage):
+  ## exactly ?chrome=off's "board and nothing else" PLUS the transport
+  ## strip's own play/pause, seek track + playhead, and tick/time readout
+  ## — nothing else. Mutually exclusive with ?chrome=off (one `chrome`
+  ## query value). Explicit opt-IN only; neither param present (nor
+  ## ?chrome=off) leaves the owner-ruled default completely untouched —
+  ## the "side-lane docking" suite's `!CHROME_OFF && !CHROME_CONTROLS`
+  ## assertion above already pins that.
+  test "the param is parsed, sets data-chrome, and defaults autoplay on":
+    checkInBoth "var CHROME_CONTROLS = false;"
+    checkInBoth "CHROME_CONTROLS = new URLSearchParams(location.search).get('chrome') === 'controls';"
+    checkInBoth "document.body.setAttribute('data-chrome', 'controls');"
+    checkInBoth "var AUTOPLAY_PENDING = CHROME_CONTROLS;"
+    checkInBoth "if (AUTOPLAY_PENDING && new URLSearchParams(location.search).get('autoplay') === '0')"
+    checkInBoth "AUTOPLAY_PENDING = false;"
+
+  test "autoplay fires once on the first frame, gated on the wire's own playing flag":
+    # Same one-shot-on-first-frame idiom as START_SPEED/SEEK_T (onFrame
+    # flushes and nulls/falses the pending var) — gated on s.pl so it can
+    # never fight an already-playing replay or fire a second time.
+    checkInBoth "if (AUTOPLAY_PENDING) { AUTOPLAY_PENDING = false; if (!s.pl) togglePlay(); }"
+
+  test "the CSS block hides everything chrome=off hides, minus #transport itself":
+    checkInBoth "body[data-chrome=\"controls\"] #lane-l,"
+    checkInBoth "body[data-chrome=\"controls\"] #lane-r,"
+    checkInBoth "body[data-chrome=\"controls\"] #scorebug,"
+    checkInBoth "body[data-chrome=\"controls\"] #commsdock,"
+    checkInBoth "body[data-chrome=\"controls\"] #viewpanel,"
+    checkInBoth "body[data-chrome=\"controls\"] #killfeed,"
+    checkInBoth "body[data-chrome=\"controls\"] #endcard,"
+    checkInBoth "body[data-chrome=\"controls\"] #voteStage,"
+    checkInBoth "body[data-chrome=\"controls\"] #huddleStage,"
+    checkInBoth "body[data-chrome=\"controls\"] #lightpool,"
+    checkInBoth "body[data-chrome=\"controls\"] #grain,"
+    checkInBoth "body[data-chrome=\"controls\"] #status { display: none !important; }"
+    # Unlike ?chrome=off, #transport (and therefore #chrome, its parent)
+    # must NEVER be in this mode's hide list — there has to be something
+    # left to scrub. checkInBoth can only assert presence, so assert the
+    # absence directly against both pages.
+    for page in bothPages():
+      checkpoint(page.label & ": #transport must stay visible under chrome=controls")
+      check not page.text.contains("body[data-chrome=\"controls\"] #transport,")
+      check not page.text.contains("body[data-chrome=\"controls\"] #chrome,")
+
+  test "inside the transport, only play/pause + the seek track + the tick readout survive":
+    checkInBoth "body[data-chrome=\"controls\"] #btn-restart,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-back,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-fwd,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-end,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-loop,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-skip,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-spoilers,"
+    checkInBoth "body[data-chrome=\"controls\"] #btn-share,"
+    checkInBoth "body[data-chrome=\"controls\"] #ffwd-chip,"
+    checkInBoth "body[data-chrome=\"controls\"] #win-chip,"
+    checkInBoth "body[data-chrome=\"controls\"] #speedchips,"
+    checkInBoth "body[data-chrome=\"controls\"] #momentum,"
+    checkInBoth "body[data-chrome=\"controls\"] .momentum-label,"
+    checkInBoth "body[data-chrome=\"controls\"] #lulls,"
+    checkInBoth "body[data-chrome=\"controls\"] .beat-marker,"
+    checkInBoth "body[data-chrome=\"controls\"] #scrub-win { display: none !important; }"
+    # #btn-play, #tick-clock, .scrub-track/#scrub-fill/#scrub-head are never
+    # named in any chrome=controls hide rule.
+    for page in bothPages():
+      checkpoint(page.label & ": the surviving transport controls must stay visible")
+      check not page.text.contains("body[data-chrome=\"controls\"] #btn-play,")
+      check not page.text.contains("body[data-chrome=\"controls\"] #btn-play {")
+      check not page.text.contains("body[data-chrome=\"controls\"] #tick-clock,")
+      check not page.text.contains("body[data-chrome=\"controls\"] #tick-clock {")
+      check not page.text.contains("body[data-chrome=\"controls\"] #scrub-fill,")
+      check not page.text.contains("body[data-chrome=\"controls\"] #scrub-head,")
+
+  test "the rail is skipped the same way chrome=off skips it, and #board keeps its stock top/height calc":
+    checkInBoth "var sideLanes = !CHROME_OFF && !CHROME_CONTROLS;"
+    checkInBoth "var commsWide = !CHROME_OFF && !CHROME_CONTROLS && !EMBED &&"
+    # No `body[data-chrome="controls"] #board { top: 0; height: 100%; }`
+    # override — unlike ?chrome=off, the visible transport must keep
+    # reserving --band via #board's own untouched calc().
+    for page in bothPages():
+      checkpoint(page.label & ": #board must not get a chrome=controls top/height override")
+      check not page.text.contains("body[data-chrome=\"controls\"] #board")
 
 suite "SEASON 2 replay viewer HUD: left rail is the default (owner 2026-09-09)":
   ## "the left rail is the design i want" / "always" / "just make left rail

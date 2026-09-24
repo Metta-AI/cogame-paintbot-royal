@@ -3269,6 +3269,74 @@ body[data-chrome="off"] #grain,
 body[data-chrome="off"] #status { display: none !important; }
 body[data-chrome="off"] #board { top: 0; height: 100%; }
 
+/* ============================================================
+   CHROME CONTROLS (?chrome=controls) — REPLAY-CONTRACT §3a extension
+   (owner ruling 2026-09-24, softmax.com store page media stage): exactly
+   ?chrome=off's "board and nothing else" PLUS the transport strip's own
+   play/pause, seek track + playhead, and tick/time readout — nothing
+   else. Same hide list as ?chrome=off above (both pillarbox rails,
+   #scorebug/#commsdock/#viewpanel/#killfeed, the flag banner lane, vote/
+   huddle overlays, POV badge, hash-mismatch warning, end card, the
+   ambient light-pool/grain/status), EXCEPT #transport itself stays on
+   screen instead of joining that list — a media-stage box needs
+   something to scrub; ?chrome=off has nothing to scrub FOR. #chrome
+   itself therefore cannot be hidden wholesale the way ?chrome=off hides
+   it (that would take #transport with it) — its OTHER children are
+   listed individually instead. Inside #transport, everything except
+   #btn-play, #tick-clock, and the seek track itself (.scrub-track,
+   #scrub-fill, #scrub-head) is trimmed too: no restart/back/+5s/jump-to-
+   end/loop/auto-skip/spoilers/share buttons, no speed chips, no win
+   chip, no momentum (GLORY) graph or lull shading riding along under the
+   track, and no kill/flag beat markers dotting it (spoiler-adjacent
+   annotation, same call as the graph/shading). Mutually exclusive with
+   ?chrome=off — the URL carries one
+   `chrome` value. relayout() below folds CHROME_CONTROLS into the same
+   sideLanes=false / no-rail path CHROME_OFF already takes, so the board
+   still gets the WHOLE box's width; unlike ?chrome=off, #board here
+   keeps its stock top/height calc() (no top:0/height:100% override) —
+   the visible transport still reserves --band via its own offsetHeight,
+   so the board's HEIGHT is the whole box minus the transport's own
+   rendered height, same mechanism the default bottom-docked transport
+   already uses. See the JS parse block (CHROME_CONTROLS/AUTOPLAY_PENDING)
+   for the autoplay-on-load half of this mode.
+   ============================================================ */
+body[data-chrome="controls"] #lane-l,
+body[data-chrome="controls"] #lane-r,
+body[data-chrome="controls"] #scorebug,
+body[data-chrome="controls"] #commsdock,
+body[data-chrome="controls"] #viewpanel,
+body[data-chrome="controls"] #mmwarn,
+body[data-chrome="controls"] #povBadge,
+body[data-chrome="controls"] #fpv,
+body[data-chrome="controls"] #bannerlane,
+body[data-chrome="controls"] #kickoffLine,
+body[data-chrome="controls"] #killfeed,
+body[data-chrome="controls"] #gloryPops,
+body[data-chrome="controls"] #voteStage,
+body[data-chrome="controls"] #huddleStage,
+body[data-chrome="controls"] #huddleChip,
+body[data-chrome="controls"] #huddlePanel,
+body[data-chrome="controls"] #endcard,
+body[data-chrome="controls"] #lightpool,
+body[data-chrome="controls"] #grain,
+body[data-chrome="controls"] #status { display: none !important; }
+body[data-chrome="controls"] #btn-restart,
+body[data-chrome="controls"] #btn-back,
+body[data-chrome="controls"] #btn-fwd,
+body[data-chrome="controls"] #btn-end,
+body[data-chrome="controls"] #btn-loop,
+body[data-chrome="controls"] #btn-skip,
+body[data-chrome="controls"] #btn-spoilers,
+body[data-chrome="controls"] #btn-share,
+body[data-chrome="controls"] #ffwd-chip,
+body[data-chrome="controls"] #win-chip,
+body[data-chrome="controls"] #speedchips,
+body[data-chrome="controls"] #momentum,
+body[data-chrome="controls"] .momentum-label,
+body[data-chrome="controls"] #lulls,
+body[data-chrome="controls"] .beat-marker,
+body[data-chrome="controls"] #scrub-win { display: none !important; }
+
 /* Opt-OUT of the #viewpanel overlay (zoom bar + minimap) by param only:
    ?viewpanel=0 sets body[data-noviewpanel]. Defaults are unchanged everywhere
    — the League Replayer shell loads the board with ?embed=1 and KEEPS zoom +
@@ -3832,6 +3900,34 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
   var CHROME_OFF = false;
   try { CHROME_OFF = new URLSearchParams(location.search).get('chrome') === 'off'; } catch (e) {}
   if (CHROME_OFF) document.body.setAttribute('data-chrome', 'off');
+
+  // ?chrome=controls (REPLAY-CONTRACT §3a extension, owner ruling
+  // 2026-09-24 — the softmax.com store page's media stage): exactly
+  // ?chrome=off's "board and nothing else" PLUS the transport strip
+  // (play/pause, the seek track + playhead, the tick/time readout) — the
+  // CSS block beside body[data-chrome="off"] above trims #transport's own
+  // extra buttons/chips/graph down to just those three. Explicit opt-IN
+  // only, and mutually exclusive with ?chrome=off — the URL carries one
+  // `chrome` value. relayout() below folds CHROME_CONTROLS into the same
+  // "no rail" path CHROME_OFF takes (sideLanes/commsWide); unlike
+  // CHROME_OFF, #board's own top/height calc() is left untouched — the
+  // visible transport still reserves --band, so the board fills the box
+  // minus the transport's OWN rendered height, not the box minus nothing.
+  var CHROME_CONTROLS = false;
+  try { CHROME_CONTROLS = new URLSearchParams(location.search).get('chrome') === 'controls'; } catch (e) {}
+  if (CHROME_CONTROLS) document.body.setAttribute('data-chrome', 'controls');
+
+  // ?autoplay=0 opts OUT of chrome=controls' autoplay: that mode starts
+  // PLAYING at normal (1x) speed the instant the first frame arrives,
+  // unlike every other mode/param combo, which loads paused. One-shot,
+  // same idiom as START_SPEED/SEEK_T below — onFrame fires it once, gated
+  // on the wire's own s.pl (actually playing) flag so it can never fight
+  // an already-playing replay or fire a second time.
+  var AUTOPLAY_PENDING = CHROME_CONTROLS;
+  try {
+    if (AUTOPLAY_PENDING && new URLSearchParams(location.search).get('autoplay') === '0')
+      AUTOPLAY_PENDING = false;
+  } catch (e) {}
 
   // ?viewpanel=0 hides the #viewpanel overlay (zoom bar + minimap). This is an
   // explicit opt-OUT only — the default (param absent) is unchanged for every
@@ -4473,6 +4569,7 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
     if (START_SPEED != null) { send(START_SPEED); START_SPEED = null; }
     if (SEEK_T != null) { send('s:' + SEEK_T); SEEK_T = null; }
     if (SEEK_FRAC != null && s.en) { seekToFraction(s, SEEK_FRAC); SEEK_FRAC = null; }
+    if (AUTOPLAY_PENDING) { AUTOPLAY_PENDING = false; if (!s.pl) togglePlay(); }
     applyAchievementFocus(s);
 
     // The board's real native size, read off the core's letterbox transform.
@@ -8939,9 +9036,10 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
       : Math.min(RAIL_PREF, Math.max(RAIL_MIN, Math.round(railFit)));
     var boardFloor = tinyBox ? Math.max(120, Math.round(boxW * 0.45)) : 320;
     root.style.setProperty('--rail-w', railW + 'px');
-    // ?chrome=off (REPLAY-CONTRACT §3a) turns the rail off entirely — the
-    // default (param absent) leaves sideLanes true, unchanged from before.
-    var sideLanes = !CHROME_OFF;
+    // ?chrome=off / ?chrome=controls (REPLAY-CONTRACT §3a and its
+    // controls extension) both turn the rail off entirely — the default
+    // (neither param) leaves sideLanes true, unchanged from before.
+    var sideLanes = !CHROME_OFF && !CHROME_CONTROLS;
     if (document.body.classList.contains('sidelanes') !== sideLanes ||
         document.body.classList.contains('sidelanes-both') !== (sideLanes && lanesBoth)) {
       document.body.classList.toggle('sidelanes', sideLanes);
@@ -8950,11 +9048,11 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
     }
     // Tier 1 fits the board into the box MINUS the content-fit rail; tier 2
     // fits the full box (both rails then split the leftover evenly).
-    // Under CHROME_OFF, sideLanes is false and there is no rail at all —
-    // skip the reservation so the board gets the WHOLE box (same formula
-    // as tier 2, for a different reason). The default path (sideLanes
-    // true) is untouched: this reduces to the original
-    // `lanesBoth ? boxW : Math.max(boardFloor, boxW - railW)`.
+    // Under CHROME_OFF or CHROME_CONTROLS, sideLanes is false and there
+    // is no rail at all — skip the reservation so the board gets the
+    // WHOLE box's width (same formula as tier 2, for a different reason).
+    // The default path (sideLanes true) is untouched: this reduces to the
+    // original `lanesBoth ? boxW : Math.max(boardFloor, boxW - railW)`.
     var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railW);
     for (var pass = 0; pass < 4; pass++) {
       var prevTop = topBand, prevBand = band;
@@ -8981,9 +9079,9 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
       // column into two below this size, see the CSS comment).
       document.body.classList.toggle('tiny', boardW <= 620);
       // The scorebug is always docked in the left rail by default now
-      // (sideLanes is unconditional except under ?chrome=off) — the top
-      // band never reserves space, so the board gets the whole frame
-      // height back at every window shape.
+      // (sideLanes is unconditional except under ?chrome=off or
+      // ?chrome=controls) — the top band never reserves space, so the
+      // board gets the whole frame height back at every window shape.
       topBand = 0;
       band = transport ? transport.offsetHeight : 0;
       root.style.setProperty('--topband', topBand + 'px');
@@ -9010,7 +9108,7 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
     // the lobby never spoke (owner spec) — the dock opens regardless of comms,
     // the .cd-empty state names the silence, and the rail counts as the WIDE
     // comms presentation (chip/panel stay put) whatever its exact width.
-    var commsWide = !CHROME_OFF && !EMBED &&
+    var commsWide = !CHROME_OFF && !CHROME_CONTROLS && !EMBED &&
       (sideLanes || (COMMS_AVAILABLE && (boxW - stageW) >= 280));
     document.body.classList.toggle('commswide', commsWide);
     if (lastState) renderPhaseOverlays(lastState);

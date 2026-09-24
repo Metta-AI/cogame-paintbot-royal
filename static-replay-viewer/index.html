@@ -1374,16 +1374,37 @@ body.commswide.act-huddle #commsdock {
    around #commsdock, so the pre-lane presentation is intact. */
 body.commswide #lane-l { display: flex; flex: 1 1 auto; }
 #lane-l #commsdock { min-height: 0; }
-/* Tier 1: the left rail alone takes ALL the letterbox (stage docks right,
-   "use the full left lane letterbox space"). Tier 2 adds the right rail;
-   the two 1-1-0 columns then split the leftover evenly, which is exactly
-   what re-centers the stage. */
+/* Tier 1: the left rail CONTENT-FITS (owner ruling 2026-09-24: "the board
+   ... must be MUCH bigger" — today's fixed 240px rail leaves the board
+   width-bound with empty space to spare). relayout() computes --rail-w,
+   clamped to [RAIL_MIN 168, RAIL_PREF 240], and the stage claims every px
+   that frees up; flex:0 0 auto + an explicit width (not the old flex:1 1 0
+   auto-grow, which would just re-absorb the freed space) is what makes
+   that width stick. Tier 2 (.sidelanes-both, below) restores the original
+   1-1-0 split — two equal columns flanking a centered stage — untouched. */
 body.sidelanes #lane-l {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  width: var(--rail-w, 240px);
   padding: calc(14 * var(--u)) calc(16 * var(--u));
   gap: calc(12 * var(--u));
   overflow: hidden;
+}
+body.sidelanes-both #lane-l {
+  flex: 1 1 0;
+  width: auto;
+}
+/* TIER 1 RAIL TYPOGRAPHY (owner ruling 2026-09-24): a content-fit rail can
+   clamp down to RAIL_MIN (168px), narrower than the rail's type was ever
+   authored for at full --hudscale — so tier 1 additionally scales by how
+   much narrower the rail is than its old fixed width. --rail-u (relayout())
+   = min(hudscale, railW / RAIL_PREF), never scaling ABOVE hudscale. Set
+   here on #lane-l (cascades to #commsdock, which carries no --u of its
+   own) and, below, on #scorebug directly (it already sets its OWN --u and
+   would not otherwise inherit this). Tier 2's rail stays >= LANE_MIN (300)
+   wide, so it is excluded and keeps the untouched --hudscale rule. */
+body.sidelanes:not(.sidelanes-both) #lane-l {
+  --u: calc(1px * var(--rail-u, 1));
 }
 body.sidelanes-both #lane-r {
   display: flex;
@@ -1412,6 +1433,12 @@ body.sidelanes #scorebug {
   box-shadow: none;
   flex: none;
   min-height: 0;
+}
+/* Tier 1 override: track the rail's actual width (--rail-u, see the
+   TIER 1 RAIL TYPOGRAPHY comment above #lane-l), not just hudscale, so a
+   168px rail doesn't clip the roster rows or the clock. */
+body.sidelanes:not(.sidelanes-both) #scorebug {
+  --u: calc(1px * var(--rail-u, 1));
 }
 body.sidelanes #scorebug .clock-col { order: -1; }
 body.sidelanes #scorebug .plates,
@@ -2999,7 +3026,7 @@ body[data-embed] #board { top: 0; height: 100%; }
    overlays, view controls, POV badge, hash-mismatch warning — every
    overlay lives inside #chrome), and the ambient light-pool/grain/status.
    relayout() also stops reserving rail width for the board (sideLanes
-   false skips the tier-1 railMin subtraction) so the board takes the
+   false skips the tier-1 railW subtraction) so the board takes the
    WHOLE box, not the box minus a hidden rail. #lockerroom (the pre-load
    loading state) is a SIBLING of #chrome, never a descendant — see its
    own DOM comment — so it stays visible exactly as before while loading.
@@ -8620,21 +8647,37 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
     //     rail LEFT, live-surface rail RIGHT, stage centered, aspect fit
     //     untouched. The square-board / ultrawide case.
     //   - TIER 1 (left rail, the default) — every other shape, portrait
-    //     included. Cap the board at (boxW - railMin) and dock it RIGHT: the
-    //     freed top band pays for the rail (the board ends up LARGER than
-    //     the old undocked layout at 1920x1080), and the whole letterbox
-    //     consolidates into one usable left column. Below ~480px wide,
-    //     reserving the full RAIL_MIN (240) would leave no room for the
-    //     board at all, so railMin/boardFloor shrink together instead — the
-    //     rail gets thin rather than disappearing (owner: shrink it, don't
-    //     fall back).
-    var LANE_MIN = 300, RAIL_MIN = 240;
+    //     included. The rail no longer reserves a fixed 240px up front
+    //     (owner ruling 2026-09-24: "the board ... must be MUCH bigger" —
+    //     the old fixed reservation left the board width-bound with empty
+    //     space to spare) — it CONTENT-FITS instead: boardHMax is the board
+    //     at the full available height (fit0's own assumption, top band
+    //     already 0), railFit is whatever width that leaves for the rail,
+    //     and railW clamps railFit into [RAIL_MIN, RAIL_PREF] so it never
+    //     goes unreadably thin (168) or wastefully wide (240, the OLD fixed
+    //     value, now a ceiling). Below ~480px wide the tiny-viewport floor
+    //     (boxW*0.32) still applies unchanged — that shape needs the rail
+    //     shrinking toward zero, not toward content, or there is no room
+    //     for the board at all (owner: shrink it, don't fall back).
+    var LANE_MIN = 300, RAIL_MIN = 168, RAIL_PREF = 240;
     var availH0 = Math.max(1, boxH - band);
     var fit0 = Math.min(boxW, Math.round(availH0 * BOARD_ASPECT));
     var lanesBoth = (boxW - fit0) >= 2 * LANE_MIN;
     var tinyBox = boxW < 480;
-    var railMin = tinyBox ? Math.max(80, Math.round(boxW * 0.32)) : RAIL_MIN;
+    // boardHMax/boardWAtMax: the board's own size if it claimed the FULL
+    // available height (the same assumption fit0 already makes). railFit is
+    // whatever width that leaves for the rail; the clamp below keeps it
+    // inside [RAIL_MIN, RAIL_PREF] so the rail's type always has enough
+    // room (see --rail-u further down) without giving the board back more
+    // width than it needs.
+    var boardHMax = availH0;
+    var boardWAtMax = boardHMax * BOARD_ASPECT;
+    var railFit = boxW - boardWAtMax;
+    var railW = tinyBox
+      ? Math.max(80, Math.round(boxW * 0.32))
+      : Math.min(RAIL_PREF, Math.max(RAIL_MIN, Math.round(railFit)));
     var boardFloor = tinyBox ? Math.max(120, Math.round(boxW * 0.45)) : 320;
+    root.style.setProperty('--rail-w', railW + 'px');
     // ?chrome=off (REPLAY-CONTRACT §3a) turns the rail off entirely — the
     // default (param absent) leaves sideLanes true, unchanged from before.
     var sideLanes = !CHROME_OFF;
@@ -8644,14 +8687,14 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
       document.body.classList.toggle('sidelanes-both', sideLanes && lanesBoth);
       dockLanes(sideLanes, sideLanes && lanesBoth);
     }
-    // Tier 1 fits the board into the box MINUS the reserved rail; tier 2
+    // Tier 1 fits the board into the box MINUS the content-fit rail; tier 2
     // fits the full box (both rails then split the leftover evenly).
     // Under CHROME_OFF, sideLanes is false and there is no rail at all —
     // skip the reservation so the board gets the WHOLE box (same formula
     // as tier 2, for a different reason). The default path (sideLanes
     // true) is untouched: this reduces to the original
-    // `lanesBoth ? boxW : Math.max(boardFloor, boxW - railMin)`.
-    var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railMin);
+    // `lanesBoth ? boxW : Math.max(boardFloor, boxW - railW)`.
+    var fitBoxW = (!sideLanes || lanesBoth) ? boxW : Math.max(boardFloor, boxW - railW);
     for (var pass = 0; pass < 4; pass++) {
       var prevTop = topBand, prevBand = band;
       var availH = Math.max(1, boxH - topBand - band);
@@ -8686,6 +8729,15 @@ body[data-noviewpanel] #viewpanel { display: none !important; }
       root.style.setProperty('--band', band + 'px');
       if (Math.abs(topBand - prevTop) < 0.5 && Math.abs(band - prevBand) < 0.5) break;
     }
+    // RAIL TYPOGRAPHY (owner ruling 2026-09-24): the rail's type used to
+    // track --hudscale alone, sized for the old fixed 240px column. Now
+    // that tier 1 can clamp down to RAIL_MIN (168), the same type would
+    // clip the roster rows and the COMMS block — so tier 1 additionally
+    // scales by how much narrower the rail is than its old fixed width
+    // (railW / RAIL_PREF), never scaling ABOVE hudscale. Tier 2's rail
+    // stays >= LANE_MIN wide, so its CSS keeps the untouched --hudscale
+    // rule (see the :not(.sidelanes-both) scoping on #lane-l/#scorebug).
+    root.style.setProperty('--rail-u', Math.min(scale, railW / RAIL_PREF).toFixed(3));
     // COMMS-WIDE layout (owner spec): when the fitted stage would leave a
     // real letterbox column (>= 280 free px), dock the stage RIGHT and let
     // the comms sidebar reclaim the left column — nothing floats over the

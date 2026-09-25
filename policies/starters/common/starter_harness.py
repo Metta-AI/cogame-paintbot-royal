@@ -58,6 +58,7 @@ from websockets.exceptions import (ConnectionClosed,   # noqa: E402
                                    WebSocketException)
 
 import brain        # noqa: E402  (poc_llm_policy)
+import jev_brain    # noqa: E402  (starters/common)
 import plays        # noqa: E402  (starters/common)
 import poc_policy   # noqa: E402  (poc_llm_policy)
 import wire         # noqa: E402  (poc_llm_policy)
@@ -959,8 +960,11 @@ def run(persona: Persona, args) -> int:
     # engine's degrade target: if the sidecar rejects the model (allowlist
     # 403) or any completions call fails, brain.ResilientBrain logs once and
     # this seat keeps playing its scripted persona instead of exiting 1.
-    engine, why = brain.build_brain(args.canned, args.model,
-                                    fallback=PersonaCannedBrain(persona))
+    if not args.canned and os.environ.get("POC_JEV") == "1":
+        engine, why = jev_brain.JevChoiceBrain(persona, prompt), "System One choice over starter play calls"
+    else:
+        engine, why = brain.build_brain(args.canned, args.model,
+                                        fallback=PersonaCannedBrain(persona))
     if isinstance(engine, PersonaCannedBrain):
         why += f"; persona-canned turns for {persona.name}"
     _log(persona, f"model backend: {engine.name} ({why})")

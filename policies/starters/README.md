@@ -145,8 +145,16 @@ POC_PLAYBOOK=<dir of .wasm> \
 `--canned` uses the persona's own scripted decisions (each persona's canned
 turns exercise its character, so the three differ even offline). With
 `OPENROUTER_API_KEY` set, decisions come from a real model; in a hosted pod
-the platform's LLM sidecar is used automatically. Backend selection is the
-PoC's, unchanged.
+the platform's LLM sidecar is used automatically for chat completions.
+
+Set `POC_JEV=1` to let Jev choose among that persona's scripted play calls
+from the same player-visible summary. The choice still goes through the
+starter's normal `repair_call` and WebSocket play-call path. A hosted player
+pod uses `AWS_ENDPOINT_URL_BEDROCK_RUNTIME/v1/systemone` with the pinned
+`typesafe/jev-1.13` model; the league must allow it. For local tests, set
+`METTA_CAPTURE_URL` and `METTA_CAPTURE_KEY` to a System One-compatible
+endpoint. `--canned` takes precedence for offline proofs. Jev does not
+generate new WebAssembly plays or alter the game server.
 
 Knobs beyond the PoC's (`policy.py --help` lists them all): `--max-calls` /
 `POC_MAX_CALLS` (model calls per match, opening included), `--recall-seconds`

@@ -12,6 +12,9 @@ dependencies = [
     "coworld",
 ]
 
+[project.optional-dependencies]
+posttrain = ["torch==2.9.0", "transformers==4.57.1", "peft==0.20.0"]
+
 [tool.uv]
 # no workspace inheritance: a beginner's copy of this directory is its own
 # project, not a member of the coworld-ctf monorepo it was copied out of.

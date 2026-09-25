@@ -53,15 +53,15 @@ for entry in (str(_COMMON), str(_POC_DIR)):
     if entry not in sys.path:
         sys.path.insert(0, entry)
 
-from websockets.sync.client import connect          # noqa: E402
-from websockets.exceptions import (ConnectionClosed,   # noqa: E402
-                                   WebSocketException)
-
-import brain        # noqa: E402  (poc_llm_policy)
-import plays        # noqa: E402  (starters/common)
-import poc_policy   # noqa: E402  (poc_llm_policy)
-import wire         # noqa: E402  (poc_llm_policy)
-
+import brain  # noqa: E402  (poc_llm_policy)
+import jev_brain  # noqa: E402  (starters/common)
+import plays  # noqa: E402  (starters/common)
+import poc_policy  # noqa: E402  (poc_llm_policy)
+import posttrain_brain  # noqa: E402  (starters/common)
+import training_capture  # noqa: E402  (starters/common)
+import wire  # noqa: E402  (poc_llm_policy)
+from websockets.exceptions import ConnectionClosed, WebSocketException  # noqa: E402
+from websockets.sync.client import connect  # noqa: E402
 
 # ── The persona seam ──────────────────────────────────────────────────────
 
@@ -959,11 +959,23 @@ def run(persona: Persona, args) -> int:
     # engine's degrade target: if the sidecar rejects the model (allowlist
     # 403) or any completions call fails, brain.ResilientBrain logs once and
     # this seat keeps playing its scripted persona instead of exiting 1.
-    engine, why = brain.build_brain(args.canned, args.model,
-                                    fallback=PersonaCannedBrain(persona))
+    adapter = os.environ.get("POC_POSTTRAIN_ADAPTER", "").strip()
+    if not args.canned and adapter and os.environ.get("POC_JEV") == "1":
+        raise ValueError("choose either Jev or a post-trained adapter")
+    if not args.canned and adapter:
+        generator = posttrain_brain.TransformersGenerator(
+            pathlib.Path(adapter), os.environ.get("POC_POSTTRAIN_DEVICE", "cpu"))
+        engine, why = posttrain_brain.PosttrainBrain(generator, prompt), "Metta adapter"
+    elif not args.canned and os.environ.get("POC_JEV") == "1":
+        engine, why = jev_brain.JevChoiceBrain(persona, prompt), "System One choice over starter play calls"
+    else:
+        engine, why = brain.build_brain(args.canned, args.model,
+                                        fallback=PersonaCannedBrain(persona))
     if isinstance(engine, PersonaCannedBrain):
         why += f"; persona-canned turns for {persona.name}"
     _log(persona, f"model backend: {engine.name} ({why})")
+    capture = (training_capture.TrainingCapture(args.slot, engine.name)
+               if os.environ.get("POC_CAPTURE_TRAINING") == "1" else None)
 
     url = (f"ws://{args.host}:{args.port}/player"
            f"?slot={args.slot}&token={args.token}")
@@ -1035,10 +1047,12 @@ def run(persona: Persona, args) -> int:
         opening = seat.call(payload, "opening call")
         if opening is None or opening["kind"] != "call_accepted":
             failures.append("opening call was not accepted")
+        elif capture is not None:
+            capture.record(prompt, summary, decision, (seat.view or {}).get("tick", 0))
 
         try:
             _live_loop(persona, seat, engine, prompt, available, payload,
-                       args, failures)
+                       args, failures, capture)
         except ConnectionClosed as closed:
             # The server closes every play socket when the match ends; that
             # is the normal way out of the loop, not a transport failure.
@@ -1055,6 +1069,8 @@ def run(persona: Persona, args) -> int:
         for failure in failures:
             _log(persona, f"FAILURE: {failure}")
         return 1
+    if capture is not None:
+        capture.upload()
     _log(persona, "all starter steps passed")
     return 0
 
@@ -1110,7 +1126,7 @@ def _entries_of(payload: bytes) -> list:
 
 def _live_loop(persona: Persona, seat: StarterSeat, engine, prompt: str,
                available: list[str], payload: bytes, args,
-               failures: list[str]) -> None:
+               failures: list[str], capture: training_capture.TrainingCapture | None) -> None:
     """Stay in the match. Pump the socket, watch the view, and re-call the
     model when something changed -- spaced at least ``recall_seconds`` apart,
     at most ``max_calls`` per match, and unconditionally every
@@ -1193,6 +1209,8 @@ def _live_loop(persona: Persona, seat: StarterSeat, engine, prompt: str,
         recall = seat.call(payload, f"re-call {turn - 1}")
         if recall is None or recall["kind"] != "call_accepted":
             failures.append(f"re-call {turn - 1} was not accepted")
+        elif capture is not None:
+            capture.record(prompt, summary, decision, (seat.view or {}).get("tick", 0))
         calls += 1
         last_call_at = time.monotonic()
         before = _snapshot(seat, partner)
@@ -1207,7 +1225,7 @@ def _hosted_ws_defaults() -> dict:
     url = os.environ.get("COWORLD_PLAYER_WS_URL", "")
     if not url:
         return {}
-    from urllib.parse import urlsplit, parse_qs
+    from urllib.parse import parse_qs, urlsplit
     parts = urlsplit(url)
     query = parse_qs(parts.query)
     out = {}

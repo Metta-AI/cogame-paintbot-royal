@@ -52,7 +52,6 @@ COPY policies/poc_llm_policy/wire.py \
      policies/poc_llm_policy/poc_policy.py ./policies/poc_llm_policy/
 COPY policies/starters/common/plays.py \
      policies/starters/common/starter_harness.py \
-     policies/starters/common/jev_brain.py \
      policies/starters/common/posttrain_brain.py \
      policies/starters/common/training_capture.py ./policies/starters/common/
 COPY policies/starters/cautious/policy.py \

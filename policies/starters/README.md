@@ -156,6 +156,48 @@ pod uses `AWS_ENDPOINT_URL_BEDROCK_RUNTIME/v1/systemone` with the pinned
 endpoint. `--canned` takes precedence for offline proofs. Jev does not
 generate new WebAssembly plays or alter the game server.
 
+## Post-training from accepted play calls
+
+The starter can save player-visible prompts and accepted model decisions in
+its normal `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` ZIP. Set
+`POC_CAPTURE_TRAINING=1` and `POC_SOURCE_REVISION` for the exact player source
+commit. Capture is opt-in and works with canned, Jev, or chat backends. For a
+deterministic protocol teacher, build a starter image, then run multiple local
+games from a downloaded manifest:
+
+```bash
+coworld run-episode ./coworld/<coworld-id>/coworld_manifest.json starter-cautious:local \
+  --run python --run /app/policies/starters/cautious/policy.py \
+  --secret-env POC_CANNED=1 --secret-env POC_CAPTURE_TRAINING=1 \
+  --secret-env POC_SOURCE_REVISION="$(git rev-parse HEAD)" \
+  --episodes 10 -o /tmp/paintbot-training
+python policies/starters/export_posttrain.py /tmp/paintbot-dataset /tmp/paintbot-training \
+  --backend canned-cautious --source-revision "$(git rev-parse HEAD)"
+```
+
+The exporter checks the artifact source revision and complete-game results,
+then splits whole seeds into owner-only Metta `train.jsonl` and
+`validation.jsonl` files. It preserves the exact system prompt, player-visible
+summary, and JSON decision that led to an accepted play call. Canned is a
+protocol teacher; its choices do not establish competitive quality. From a
+Metta checkout, a bounded supervised fine-tuning run uses the normal
+post-training CLI:
+
+```bash
+uv run --package metta-posttrain --extra train metta-posttrain train \
+  --dataset /tmp/paintbot-dataset --output /tmp/paintbot-adapter \
+  --model Qwen/Qwen3-0.6B --revision PINNED_MODEL_COMMIT \
+  --device cuda --max-steps 100 --max-length 4096
+```
+
+`posttrain_brain.py` loads the saved adapter and its pinned base model, then
+returns the same JSON decision shape through the existing starter harness.
+Install the standalone starter project's `posttrain` extra and package the
+model with a player image. Set `POC_POSTTRAIN_ADAPTER` to the adapter path and
+optionally `POC_POSTTRAIN_DEVICE`. The normal `repair_call`, socket, game rules,
+scores, and replay remain authoritative. Test held-out games before submitting
+a trained player.
+
 Knobs beyond the PoC's (`policy.py --help` lists them all): `--max-calls` /
 `POC_MAX_CALLS` (model calls per match, opening included), `--recall-seconds`
 / `POC_RECALL_SECONDS` (minimum spacing between them), `--connect-deadline`

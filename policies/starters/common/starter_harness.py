@@ -53,18 +53,15 @@ for entry in (str(_COMMON), str(_POC_DIR)):
     if entry not in sys.path:
         sys.path.insert(0, entry)
 
-from websockets.sync.client import connect          # noqa: E402
-from websockets.exceptions import (ConnectionClosed,   # noqa: E402
-                                   WebSocketException)
-
-import brain        # noqa: E402  (poc_llm_policy)
-import jev_brain    # noqa: E402  (starters/common)
-import plays        # noqa: E402  (starters/common)
-import poc_policy   # noqa: E402  (poc_llm_policy)
+import brain  # noqa: E402  (poc_llm_policy)
+import jev_brain  # noqa: E402  (starters/common)
+import plays  # noqa: E402  (starters/common)
+import poc_policy  # noqa: E402  (poc_llm_policy)
 import posttrain_brain  # noqa: E402  (starters/common)
 import training_capture  # noqa: E402  (starters/common)
-import wire         # noqa: E402  (poc_llm_policy)
-
+import wire  # noqa: E402  (poc_llm_policy)
+from websockets.exceptions import ConnectionClosed, WebSocketException  # noqa: E402
+from websockets.sync.client import connect  # noqa: E402
 
 # ── The persona seam ──────────────────────────────────────────────────────
 
@@ -1228,7 +1225,7 @@ def _hosted_ws_defaults() -> dict:
     url = os.environ.get("COWORLD_PLAYER_WS_URL", "")
     if not url:
         return {}
-    from urllib.parse import urlsplit, parse_qs
+    from urllib.parse import parse_qs, urlsplit
     parts = urlsplit(url)
     query = parse_qs(parts.query)
     out = {}

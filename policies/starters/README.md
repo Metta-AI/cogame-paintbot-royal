@@ -147,21 +147,16 @@ turns exercise its character, so the three differ even offline). With
 `OPENROUTER_API_KEY` set, decisions come from a real model; in a hosted pod
 the platform's LLM sidecar is used automatically for chat completions.
 
-Set `POC_JEV=1` to let Jev choose among that persona's scripted play calls
-from the same player-visible summary. The choice still goes through the
-starter's normal `repair_call` and WebSocket play-call path. A hosted player
-pod uses `AWS_ENDPOINT_URL_BEDROCK_RUNTIME/v1/systemone` with the pinned
-`typesafe/jev-1.13` model; the league must allow it. For local tests, set
-`METTA_CAPTURE_URL` and `METTA_CAPTURE_KEY` to a System One-compatible
-endpoint. `--canned` takes precedence for offline proofs. Jev does not
-generate new WebAssembly plays or alter the game server.
+`POC_BRAIN_FACTORY=module:function` selects a player-side brain factory.
+The factory receives the persona and its playbook prompt, then returns the
+brain and a description. `--canned` takes precedence for offline proofs.
 
 ## Post-training from accepted play calls
 
 The starter can save player-visible prompts and accepted model decisions in
 its normal `COWORLD_PLAYER_ARTIFACT_UPLOAD_URL` ZIP. Set
 `POC_CAPTURE_TRAINING=1` and `POC_SOURCE_REVISION` for the exact player source
-commit. Capture is opt-in and works with canned, Jev, or chat backends. For a
+commit. Capture is opt-in and works with canned, external, or chat backends. For a
 deterministic protocol teacher, build a starter image, then run multiple local
 games from a downloaded manifest:
 

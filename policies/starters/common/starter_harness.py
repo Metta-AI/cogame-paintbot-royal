@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import importlib
 import json
 import math
 import os
@@ -54,7 +55,6 @@ for entry in (str(_COMMON), str(_POC_DIR)):
         sys.path.insert(0, entry)
 
 import brain  # noqa: E402  (poc_llm_policy)
-import jev_brain  # noqa: E402  (starters/common)
 import plays  # noqa: E402  (starters/common)
 import poc_policy  # noqa: E402  (poc_llm_policy)
 import posttrain_brain  # noqa: E402  (starters/common)
@@ -960,14 +960,16 @@ def run(persona: Persona, args) -> int:
     # 403) or any completions call fails, brain.ResilientBrain logs once and
     # this seat keeps playing its scripted persona instead of exiting 1.
     adapter = os.environ.get("POC_POSTTRAIN_ADAPTER", "").strip()
-    if not args.canned and adapter and os.environ.get("POC_JEV") == "1":
-        raise ValueError("choose either Jev or a post-trained adapter")
+    factory = os.environ.get("POC_BRAIN_FACTORY", "").strip()
+    if not args.canned and adapter and factory:
+        raise ValueError("choose either a brain factory or a post-trained adapter")
     if not args.canned and adapter:
         generator = posttrain_brain.TransformersGenerator(
             pathlib.Path(adapter), os.environ.get("POC_POSTTRAIN_DEVICE", "cpu"))
         engine, why = posttrain_brain.PosttrainBrain(generator, prompt), "Metta adapter"
-    elif not args.canned and os.environ.get("POC_JEV") == "1":
-        engine, why = jev_brain.JevChoiceBrain(persona, prompt), "System One choice over starter play calls"
+    elif not args.canned and factory:
+        module_name, function_name = factory.split(":", 1)
+        engine, why = getattr(importlib.import_module(module_name), function_name)(persona, prompt)
     else:
         engine, why = brain.build_brain(args.canned, args.model,
                                         fallback=PersonaCannedBrain(persona))

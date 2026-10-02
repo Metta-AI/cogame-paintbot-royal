@@ -36,3 +36,5 @@ import
   test_pb_shouts,
   test_pb_viewer
 {.warning[UnusedImport]: on.}
+
+import test_hosted_llm
